@@ -340,7 +340,7 @@ function NoticeBoard() {
   useEffect(() => {
     const fetchNotices = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/notices");
+        const response = await fetch("http://https://svist-college-portal.onrender.com/api/notices");
         const data = await response.json();
         setLiveNotices(data);
       } catch (error) { console.error("Failed to fetch live notices"); }
@@ -618,7 +618,7 @@ function AdmissionsView() {
     e.preventDefault();
     setStatus("Submitting to Admin Database...");
     try {
-      const response = await fetch("http://localhost:5000/api/admissions", {
+      const response = await fetch("http://https://svist-college-portal.onrender.com/api/admissions", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formData)
       });
       if (response.ok) {
@@ -751,7 +751,7 @@ function DepartmentDetailView() {
     if(!dept) return;
     const fetchFaculty = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/faculty");
+        const response = await fetch("http://https://svist-college-portal.onrender.com/api/faculty");
         const data = await response.json();
         const deptFaculty = data.filter(f => f.department === dept.shortName);
         setFacultyRoster(deptFaculty);
@@ -877,7 +877,7 @@ function StudentLoginView() {
     e.preventDefault();
     setError("");
     try {
-      const response = await fetch("http://localhost:5000/api/students/login", {
+      const response = await fetch("http://https://svist-college-portal.onrender.com/api/students/login", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(loginData),
       });
       const data = await response.json();
@@ -1082,7 +1082,7 @@ function HODLoginView() {
 
   const fetchStudents = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/students");
+      const response = await fetch("http://https://svist-college-portal.onrender.com/api/students");
       const data = await response.json();
       setStudents(data);
       const initialVals = {};
@@ -1093,7 +1093,7 @@ function HODLoginView() {
 
   const fetchNotices = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/notices");
+      const response = await fetch("http://https://svist-college-portal.onrender.com/api/notices");
       const data = await response.json();
       setNotices(data);
     } catch (error) { console.error("Failed to fetch notices"); }
@@ -1102,7 +1102,7 @@ function HODLoginView() {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch("http://localhost:5000/api/hod/login", {
+      const response = await fetch("http://https://svist-college-portal.onrender.com/api/hod/login", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(loginData),
       });
       const data = await response.json();
@@ -1118,7 +1118,7 @@ function HODLoginView() {
     e.preventDefault();
     setStatus("Broadcasting...");
     
-    const url = editingNoticeId ? `http://localhost:5000/api/notices/${editingNoticeId}` : "http://localhost:5000/api/notices";
+    const url = editingNoticeId ? `http://https://svist-college-portal.onrender.com/api/notices/${editingNoticeId}` : "http://https://svist-college-portal.onrender.com/api/notices";
     const method = editingNoticeId ? "PUT" : "POST";
 
     try {
@@ -1138,7 +1138,7 @@ function HODLoginView() {
   const handleDeleteNotice = async (id) => {
      if(!window.confirm("Delete this notice permanently?")) return;
      try {
-        const response = await fetch(`http://localhost:5000/api/notices/${id}`, {
+        const response = await fetch(`http://https://svist-college-portal.onrender.com/api/notices/${id}`, {
            method: "DELETE", headers: {"Authorization": token}
         });
         if(response.ok) fetchNotices();
@@ -1152,7 +1152,7 @@ function HODLoginView() {
 
   const updateAttendance = async (id) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/students/${id}/attendance`, {
+      const response = await fetch(`http://https://svist-college-portal.onrender.com/api/students/${id}/attendance`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", "Authorization": token },
         body: JSON.stringify({ attendance: attendanceVals[id] })
@@ -1319,21 +1319,21 @@ function AdminLoginView() {
 
   const fetchStudents = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/students");
+      const response = await fetch("http://https://svist-college-portal.onrender.com/api/students");
       setStudents(await response.json());
     } catch (error) { console.error("Failed to fetch students"); }
   };
 
   const fetchFaculty = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/faculty");
+      const response = await fetch("http://https://svist-college-portal.onrender.com/api/faculty");
       setFacultyList(await response.json());
     } catch (error) { console.error("Failed to fetch faculty"); }
   };
 
   const fetchAdmissions = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/admissions", {
+      const response = await fetch("http://https://svist-college-portal.onrender.com/api/admissions", {
         headers: { "Authorization": token }
       });
       setAdmissionsList(await response.json());
@@ -1351,7 +1351,7 @@ function AdminLoginView() {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch("http://localhost:5000/api/admin/login", {
+      const response = await fetch("http://https://svist-college-portal.onrender.com/api/admin/login", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(loginData),
       });
       const data = await response.json();
@@ -1364,7 +1364,7 @@ function AdminLoginView() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const url = editingId ? `http://localhost:5000/api/students/${editingId}` : "http://localhost:5000/api/students";
+    const url = editingId ? `http://https://svist-college-portal.onrender.com/api/students/${editingId}` : "http://https://svist-college-portal.onrender.com/api/students";
     const method = editingId ? "PUT" : "POST";
     try {
       const response = await fetch(url, {
@@ -1380,7 +1380,7 @@ function AdminLoginView() {
   const handleDelete = async (id) => {
     if (!window.confirm("WARNING: Purge student from Atlas?")) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/students/${id}`, {
+      const response = await fetch(`http://https://svist-college-portal.onrender.com/api/students/${id}`, {
         method: "DELETE", headers: { "Authorization": token }
       });
       if (response.ok) fetchStudents(); 
@@ -1390,7 +1390,7 @@ function AdminLoginView() {
   const handleFacultySubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch("http://localhost:5000/api/faculty", {
+      const response = await fetch("http://https://svist-college-portal.onrender.com/api/faculty", {
         method: "POST", headers: { "Content-Type": "application/json", "Authorization": token }, body: JSON.stringify(facultyData),
       });
       if (response.ok) {
@@ -1403,7 +1403,7 @@ function AdminLoginView() {
   const handleFacultyDelete = async (id) => {
     if (!window.confirm("WARNING: Purge faculty from Atlas?")) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/faculty/${id}`, {
+      const response = await fetch(`http://https://svist-college-portal.onrender.com/api/faculty/${id}`, {
         method: "DELETE", headers: { "Authorization": token }
       });
       if (response.ok) fetchFaculty(); 
@@ -1413,7 +1413,7 @@ function AdminLoginView() {
   const handleAdmissionDelete = async (id) => {
     if (!window.confirm("Process/Archive this application?")) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/admissions/${id}`, {
+      const response = await fetch(`http://https://svist-college-portal.onrender.com/api/admissions/${id}`, {
         method: "DELETE", headers: { "Authorization": token }
       });
       if (response.ok) fetchAdmissions(); 
