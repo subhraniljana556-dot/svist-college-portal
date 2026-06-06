@@ -1,7 +1,4 @@
-// 1. Import Dependencies & Network Bypass
-const dns = require("dns");
-dns.setServers(["8.8.8.8", "8.8.4.4"]); // ISP Firewall Bypass
-
+// 1. Import Dependencies (CLEAN CLOUD IMPORTS - NO DNS BYPASS)
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -15,15 +12,15 @@ const Admin = require("./models/Admin");
 const HOD = require("./models/HOD");       
 const Notice = require("./models/Notice"); 
 const Faculty = require("./models/Faculty");
-const Admission = require("./models/Admission"); // NEW INJECTION
+const Admission = require("./models/Admission"); 
 
 // 3. Initialize Engine
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 4. Connect to Atlas Database
-mongoose.connect(process.env.MONGO_URI, { family: 4 })
+// 4. Connect to Atlas Database (OPTIMIZED FOR CLOUD - NO IPv4 RESTRICTION)
+mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("Database connection secured: SVIST MongoDB Live"))
   .catch((err) => console.error("Database connection failed:", err));
 
