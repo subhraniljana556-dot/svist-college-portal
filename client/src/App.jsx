@@ -1,11 +1,32 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, Suspense, lazy } from "react"
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useParams } from "react-router-dom"
 import {
   GraduationCap, Menu, X, ArrowRight, Award, Building2, Cpu, Radio, Cog, Building, BrainCircuit,
   Zap, Bell, Calendar, FileText, AlertCircle, MapPin, Phone, BookOpen, FlaskConical, ShieldAlert,
   TrendingUp, Briefcase, UserCheck, ShieldCheck, Landmark, Lock, Mail, LayoutDashboard, Users, Activity,
-  Database, UserPlus, List, Trash2, Edit, Send, LogOut, CheckCircle, Percent, Link as LinkIcon, DownloadCloud, ChevronRight, BookOpenCheck, CalendarDays, Scale, Wallet, Banknote, Download, FileSpreadsheet
+  Database, UserPlus, List, Trash2, Edit, Send, LogOut, CheckCircle, Percent, Link as LinkIcon, DownloadCloud, ChevronRight, BookOpenCheck, CalendarDays, Scale, Wallet, Banknote, Download, FileSpreadsheet,
+  CreditCard, Sparkles, QrCode, ChevronDown, Layers, Bus, Trophy
 } from "lucide-react"
+import { apiFetch } from "./config/api"
+import SkeletonLoader from "./components/SkeletonLoader"
+
+import AICampusAssistant from "./components/AICampusAssistant"
+
+// ================================================================
+// CODE-SPLITTING — React.lazy() for Heavy Route Components
+// ================================================================
+const AcademicsView = lazy(() => import("./views/AcademicsView"))
+const ScholarshipsView = lazy(() => import("./views/ScholarshipsView"))
+const PlacementsView = lazy(() => import("./views/PlacementsView"))
+const OnlineFeesView = lazy(() => import("./views/OnlineFeesView"))
+const StudentLoginView = lazy(() => import("./views/StudentLoginView"))
+const HODLoginView = lazy(() => import("./views/HODLoginView"))
+const AdminLoginView = lazy(() => import("./views/AdminLoginView"))
+const DepartmentDetailView = lazy(() => import("./views/DepartmentDetailView"))
+const CampusTourView = lazy(() => import("./views/CampusTourView"))
+const AlumniView = lazy(() => import("./views/AlumniView"))
+const TransportView = lazy(() => import("./views/TransportView"))
+const ClubsEventsView = lazy(() => import("./views/ClubsEventsView"))
 
 /* ============================================
    DATA CONSTANTS & PERMANENT IMAGES
@@ -15,11 +36,15 @@ const navLinks = [
   { name: "Home", href: "/" },
   { name: "Academics", href: "/academics" },
   { name: "Admissions", href: "/admissions" },
-  { name: "Departments", href: "/departments" },
+  { name: "Campus Tour", href: "/campus-tour" },
+  { name: "Alumni", href: "/alumni" },
+  { name: "Clubs & Events", href: "/clubs-events" },
+  { name: "Transport", href: "/transport" },
   { name: "Placements", href: "/placements" },
+  { name: "Pay Fees", href: "/pay-fees", highlight: true },
 ]
 
-const departments = [
+export const departments = [
   { 
     slug: "cse", name: "Computer Science & Engineering", shortName: "CSE", icon: Cpu, 
     image: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=600&q=80", 
@@ -61,7 +86,6 @@ const departments = [
     image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=600&q=80", 
     description: "Build sustainable infrastructure, highways, and modern high-rises.",
     labs: [
-      // NEW, permanent high-res construction URL below
       { name: "Concrete Technology", img: "https://images.unsplash.com/photo-1531834685032-c34bf0d84c77?auto=format&fit=crop&w=400&q=80" },
       { name: "Topography & Surveying", img: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=400&q=80" }
     ]
@@ -77,7 +101,7 @@ const departments = [
   },
 ]
 
-const getNoticeIcon = (type) => {
+export const getNoticeIcon = (type) => {
   switch (type) {
     case "Urgent Announcement": return <AlertCircle className="h-5 w-5 text-red-500" />
     case "Campus Event": return <Calendar className="h-5 w-5 text-blue-500" />
@@ -85,7 +109,7 @@ const getNoticeIcon = (type) => {
   }
 }
 
-const getNoticeBadge = (type) => {
+export const getNoticeBadge = (type) => {
   switch (type) {
     case "Urgent Announcement": return <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">Urgent</span>
     case "Campus Event": return <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">Event</span>
@@ -94,61 +118,209 @@ const getNoticeBadge = (type) => {
 }
 
 /* ============================================
-   NAVIGATION COMPONENT 
+   NAVIGATION COMPONENT — PROFESSIONAL TIERED
    ============================================ */
 
 function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
+  const [isCampusOpen, setIsCampusOpen] = useState(false)
   const location = useLocation()
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#1e3a8a] shadow-lg border-b border-blue-900">
-      <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
-        <div className="flex h-20 items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
-            <div className="bg-white p-1 rounded-full shadow-md">
-               <img src="/svist-logo.png" alt="SVIST Logo" className="h-12 w-12 object-contain" />
-            </div>
-            <div className="flex flex-col hidden sm:flex">
-              <span className="text-xl font-black tracking-tight text-white leading-tight">SVIST</span>
-              <span className="text-[10px] font-medium text-amber-400 uppercase tracking-widest leading-tight">Kolkata</span>
-            </div>
-          </Link>
-          <div className="hidden items-center gap-1 xl:gap-4 lg:flex">
-            {navLinks.map((link) => (
-              <Link 
-                key={link.name} to={link.href} 
-                className={`rounded-md px-3 py-2 text-sm font-bold transition-colors ${location.pathname === link.href ? 'text-amber-400 bg-white/10' : 'text-white/90 hover:bg-white/10 hover:text-amber-400'}`}
-              >
-                {link.name}
+    <header className="fixed top-0 left-0 right-0 z-50 shadow-xl">
+      
+      {/* 1. TOP MICRO UTILITY STRIP */}
+      <div className="bg-slate-950 text-slate-300 text-[11px] font-medium border-b border-slate-800 py-1.5 px-4 sm:px-8 hidden md:block">
+        <div className="mx-auto max-w-[1440px] flex items-center justify-between">
+          <div className="flex items-center gap-4 text-slate-400">
+            <span className="flex items-center gap-1.5 text-amber-400 font-bold">
+              <Award className="w-3.5 h-3.5" /> AICTE Approved • MAKAUT Affiliated (Code: 247)
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1">
+              <MapPin className="w-3 h-3 text-cyan-400" /> Sonarpur, Kolkata - 700145
+            </span>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1 text-slate-300">
+              <Phone className="w-3 h-3 text-amber-400" /> Helpline: +91 33 2401 XXXX
+            </span>
+            <div className="flex items-center gap-1.5 pl-3 border-l border-slate-700">
+              <Link to="/student-login" className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 hover:bg-blue-500 hover:text-white font-bold transition-colors">
+                Student Portal
               </Link>
-            ))}
-            <div className="flex gap-2 ml-4 border-l border-white/20 pl-4">
-              <Link to="/student-login" className="rounded-md bg-white/10 border border-white/30 px-4 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-white hover:text-[#1e3a8a]">Student Login</Link>
-              <Link to="/hod-login" className="rounded-md bg-amber-500 px-4 py-2 text-sm font-bold text-slate-900 shadow-sm transition-all hover:bg-amber-400 hover:shadow-md">HOD Login</Link>
-              <Link to="/admin-login" className="rounded-md bg-slate-900 px-4 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-slate-800 hover:shadow-md border border-slate-700">Admin DB</Link>
+              <Link to="/hod-login" className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 hover:bg-amber-500 hover:text-slate-950 font-bold transition-colors">
+                HOD Portal
+              </Link>
+              <Link to="/admin-login" className="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white font-bold transition-colors border border-slate-700">
+                Admin DB
+              </Link>
             </div>
           </div>
-          <button onClick={() => setIsOpen(!isOpen)} className="rounded-lg p-2 text-white transition-colors hover:bg-white/10 lg:hidden">
-            {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
         </div>
       </div>
-      
-      {/* MOBILE NAVIGATION MENU */}
-      {isOpen && (
-        <div className="lg:hidden bg-[#1e3a8a] border-t border-blue-800 pb-4 px-4 shadow-xl absolute w-full left-0 top-20">
-           <div className="flex flex-col space-y-2 mt-2">
-             {navLinks.map((link) => (
-                <Link key={link.name} to={link.href} onClick={() => setIsOpen(false)} className="text-white font-bold py-2 border-b border-blue-800">{link.name}</Link>
-             ))}
-             <Link to="/student-login" onClick={() => setIsOpen(false)} className="text-amber-400 font-bold py-2">Student Login</Link>
-             <Link to="/hod-login" onClick={() => setIsOpen(false)} className="text-amber-400 font-bold py-2 border-t border-blue-800">HOD Login</Link>
-             <Link to="/admin-login" onClick={() => setIsOpen(false)} className="text-white font-bold py-2 border-t border-blue-800">Admin DB</Link>
-           </div>
+
+      {/* 2. MAIN NAVIGATION BAR */}
+      <nav className="bg-[#1e3a8a] border-b border-blue-900">
+        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
+          <div className="flex h-18 sm:h-20 items-center justify-between">
+            
+            {/* Institution Brand */}
+            <Link to="/" className="flex items-center gap-3.5 hover:opacity-95 transition-opacity group">
+              <div className="bg-white p-1.5 rounded-2xl shadow-md border border-white/30 group-hover:scale-105 transition-transform shrink-0">
+                <img src="/svist-logo.png" alt="SVIST Logo" className="h-10 w-10 sm:h-12 sm:w-12 object-contain" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-base sm:text-xl font-black tracking-tight text-white leading-tight">
+                  SWAMI VIVEKANANDA
+                </span>
+                <span className="text-[10px] sm:text-xs font-bold text-amber-400 uppercase tracking-widest leading-tight">
+                  Institute of Science & Technology
+                </span>
+              </div>
+            </Link>
+
+            {/* Desktop Navigation Links */}
+            <div className="hidden lg:flex items-center gap-1 xl:gap-2">
+              <Link
+                to="/"
+                className={`px-3.5 py-2 rounded-xl text-sm font-bold transition-all ${location.pathname === '/' ? 'bg-white/15 text-amber-400 shadow-xs' : 'text-white/90 hover:text-amber-400 hover:bg-white/10'}`}
+              >
+                Home
+              </Link>
+
+              <Link
+                to="/academics"
+                className={`px-3.5 py-2 rounded-xl text-sm font-bold transition-all ${location.pathname === '/academics' ? 'bg-white/15 text-amber-400 shadow-xs' : 'text-white/90 hover:text-amber-400 hover:bg-white/10'}`}
+              >
+                Academics
+              </Link>
+
+              <Link
+                to="/admissions"
+                className={`px-3.5 py-2 rounded-xl text-sm font-bold transition-all ${location.pathname === '/admissions' ? 'bg-white/15 text-amber-400 shadow-xs' : 'text-white/90 hover:text-amber-400 hover:bg-white/10'}`}
+              >
+                Admissions
+              </Link>
+
+              {/* Campus Life Dropdown */}
+              <div
+                className="relative"
+                onMouseEnter={() => setIsCampusOpen(true)}
+                onMouseLeave={() => setIsCampusOpen(false)}
+              >
+                <button
+                  className={`px-3.5 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5 cursor-pointer ${['/campus-tour', '/transport', '/clubs-events'].includes(location.pathname) ? 'bg-white/15 text-amber-400' : 'text-white/90 hover:text-amber-400 hover:bg-white/10'}`}
+                >
+                  <span>Campus Life</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isCampusOpen ? 'rotate-180 text-amber-400' : 'text-blue-300'}`} />
+                </button>
+
+                {isCampusOpen && (
+                  <div className="absolute top-full left-0 w-64 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-2 animate-in fade-in slide-in-from-top-2 duration-150 z-50">
+                    <Link
+                      to="/campus-tour"
+                      onClick={() => setIsCampusOpen(false)}
+                      className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white transition-colors group"
+                    >
+                      <Building2 className="w-5 h-5 text-amber-400 group-hover:scale-110 transition-transform" />
+                      <div>
+                        <p className="text-xs font-black">360° Virtual Tour</p>
+                        <p className="text-[10px] text-slate-400">High-Tech Labs & Hostels</p>
+                      </div>
+                    </Link>
+
+                    <Link
+                      to="/transport"
+                      onClick={() => setIsCampusOpen(false)}
+                      className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white transition-colors group"
+                    >
+                      <Bus className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />
+                      <div>
+                        <p className="text-xs font-black">Transport & Bus Routes</p>
+                        <p className="text-[10px] text-slate-400">Timetables & Stoppages</p>
+                      </div>
+                    </Link>
+
+                    <Link
+                      to="/clubs-events"
+                      onClick={() => setIsCampusOpen(false)}
+                      className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white transition-colors group"
+                    >
+                      <Trophy className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                      <div>
+                        <p className="text-xs font-black">Clubs & INNOVA Fest</p>
+                        <p className="text-[10px] text-slate-400">Hackathons & Societies</p>
+                      </div>
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              <Link
+                to="/placements"
+                className={`px-3.5 py-2 rounded-xl text-sm font-bold transition-all ${location.pathname === '/placements' ? 'bg-white/15 text-amber-400 shadow-xs' : 'text-white/90 hover:text-amber-400 hover:bg-white/10'}`}
+              >
+                Placements
+              </Link>
+
+              <Link
+                to="/alumni"
+                className={`px-3.5 py-2 rounded-xl text-sm font-bold transition-all ${location.pathname === '/alumni' ? 'bg-white/15 text-amber-400 shadow-xs' : 'text-white/90 hover:text-amber-400 hover:bg-white/10'}`}
+              >
+                Alumni
+              </Link>
+
+              {/* Pay Fees Highlight Button */}
+              <Link
+                to="/pay-fees"
+                className="ml-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider transition-all shadow-md hover:shadow-emerald-500/20 flex items-center gap-2 hover:scale-105"
+              >
+                <CreditCard className="w-4 h-4" />
+                <span>Pay Fees</span>
+              </Link>
+            </div>
+
+            {/* Mobile Hamburger Button */}
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="p-2 text-white hover:bg-white/10 rounded-xl transition-colors lg:hidden cursor-pointer"
+              aria-label="Toggle navigation menu"
+            >
+              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
         </div>
-      )}
-    </nav>
+
+        {/* MOBILE DRAWER */}
+        {isOpen && (
+          <div className="lg:hidden bg-slate-900 border-t border-blue-800 p-5 shadow-2xl animate-in slide-in-from-top duration-200">
+            <div className="space-y-2">
+              <Link to="/" onClick={() => setIsOpen(false)} className="block py-2 px-3 rounded-lg text-white font-bold hover:bg-white/10">Home</Link>
+              <Link to="/academics" onClick={() => setIsOpen(false)} className="block py-2 px-3 rounded-lg text-white font-bold hover:bg-white/10">Academics</Link>
+              <Link to="/admissions" onClick={() => setIsOpen(false)} className="block py-2 px-3 rounded-lg text-white font-bold hover:bg-white/10">Admissions</Link>
+              <Link to="/campus-tour" onClick={() => setIsOpen(false)} className="block py-2 px-3 rounded-lg text-amber-300 font-bold hover:bg-white/10">360° Campus Tour</Link>
+              <Link to="/transport" onClick={() => setIsOpen(false)} className="block py-2 px-3 rounded-lg text-cyan-300 font-bold hover:bg-white/10">Transport & Bus Routes</Link>
+              <Link to="/clubs-events" onClick={() => setIsOpen(false)} className="block py-2 px-3 rounded-lg text-emerald-300 font-bold hover:bg-white/10">Clubs & TechFest</Link>
+              <Link to="/placements" onClick={() => setIsOpen(false)} className="block py-2 px-3 rounded-lg text-white font-bold hover:bg-white/10">Placements</Link>
+              <Link to="/alumni" onClick={() => setIsOpen(false)} className="block py-2 px-3 rounded-lg text-white font-bold hover:bg-white/10">Alumni Mentorship</Link>
+              
+              <Link to="/pay-fees" onClick={() => setIsOpen(false)} className="block py-3 px-4 bg-emerald-500 text-slate-950 font-black rounded-xl text-center text-xs uppercase tracking-wider mt-3">
+                💳 Pay Online Fees
+              </Link>
+              
+              <div className="pt-4 mt-4 border-t border-slate-800 grid grid-cols-3 gap-2 text-center text-xs">
+                <Link to="/student-login" onClick={() => setIsOpen(false)} className="py-2.5 bg-blue-600/30 text-blue-300 font-bold rounded-lg border border-blue-500/40">Student</Link>
+                <Link to="/hod-login" onClick={() => setIsOpen(false)} className="py-2.5 bg-amber-500/30 text-amber-300 font-bold rounded-lg border border-amber-500/40">HOD</Link>
+                <Link to="/admin-login" onClick={() => setIsOpen(false)} className="py-2.5 bg-slate-800 text-slate-300 font-bold rounded-lg border border-slate-700">Admin DB</Link>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </nav>
+    </header>
   )
 }
 
@@ -160,10 +332,183 @@ function HomeView() {
   return (
     <div className="animate-in fade-in duration-500">
       <HeroSection />
+      <AllInOnePortalHub />
       <WhySVISTSection />
       <DepartmentsSection />
       <NoticeBoard />
     </div>
+  )
+}
+
+function AllInOnePortalHub() {
+  return (
+    <section className="bg-slate-900 text-white py-20 border-y-4 border-[#1e3a8a] relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+      
+      <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 relative z-10">
+        
+        {/* Section Header */}
+        <div className="text-center max-w-3xl mx-auto mb-14">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-amber-400 text-xs font-black tracking-wider uppercase mb-4">
+            <Award className="w-3.5 h-3.5" /> All-in-One Digital Campus Portal
+          </div>
+          <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight">
+            Single Gateway for All College Services
+          </h2>
+          <p className="mt-4 text-slate-300 text-base sm:text-lg font-medium">
+            Everything you need is integrated in one place — pay fees, access student attendance, download Digital ID cards, compute SGPA, and submit online admissions.
+          </p>
+        </div>
+
+        {/* Unified 6-Card Services Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          
+          {/* Card 1: Online Fee Payment Gateway */}
+          <div className="bg-slate-800/90 rounded-3xl p-7 border-2 border-emerald-500/40 hover:border-emerald-400 transition-all hover:-translate-y-1.5 shadow-xl flex flex-col justify-between group">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3.5 bg-emerald-500/20 text-emerald-400 rounded-2xl border border-emerald-500/30">
+                  <CreditCard className="w-8 h-8" />
+                </div>
+                <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-xs font-black uppercase">
+                  Active Gateway
+                </span>
+              </div>
+              <h3 className="text-2xl font-black text-white group-hover:text-emerald-400 transition-colors">Pay Online Fees</h3>
+              <p className="mt-2 text-sm text-slate-300 font-medium leading-relaxed">
+                Pay semester tuition (₹52,000), MAKAUT exam fees, and hostel dues via UPI QR code or Card with instant official digital receipts.
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-slate-700/60">
+              <Link to="/pay-fees" className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl text-center flex items-center justify-center gap-2 transition-all shadow-md">
+                Launch Fee Gateway <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Card 2: Student Portal & ID Card */}
+          <div className="bg-slate-800/90 rounded-3xl p-7 border-2 border-[#1e3a8a]/60 hover:border-blue-400 transition-all hover:-translate-y-1.5 shadow-xl flex flex-col justify-between group">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3.5 bg-blue-500/20 text-blue-400 rounded-2xl border border-blue-500/30">
+                  <GraduationCap className="w-8 h-8" />
+                </div>
+                <span className="px-3 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-black uppercase">
+                  Student Console
+                </span>
+              </div>
+              <h3 className="text-2xl font-black text-white group-hover:text-blue-400 transition-colors">Student Portal & ID Card</h3>
+              <p className="mt-2 text-sm text-slate-300 font-medium leading-relaxed">
+                Check attendance, view weekly lecture routines, download your printable Digital Student ID Card, and calculate semester SGPA.
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-slate-700/60">
+              <Link to="/student-login" className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl text-center flex items-center justify-center gap-2 transition-all shadow-md">
+                Enter Student Portal <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Card 3: Online Admissions 2026-27 */}
+          <div className="bg-slate-800/90 rounded-3xl p-7 border-2 border-amber-500/40 hover:border-amber-400 transition-all hover:-translate-y-1.5 shadow-xl flex flex-col justify-between group">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3.5 bg-amber-500/20 text-amber-400 rounded-2xl border border-amber-500/30">
+                  <FileText className="w-8 h-8" />
+                </div>
+                <span className="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-xs font-black uppercase">
+                  Admissions Open
+                </span>
+              </div>
+              <h3 className="text-2xl font-black text-white group-hover:text-amber-400 transition-colors">Apply for Admissions</h3>
+              <p className="mt-2 text-sm text-slate-300 font-medium leading-relaxed">
+                Direct online admission application for B.Tech CSE, AI & DS, EE, ECE, ME, and CE programs. Instant synchronization with Admin DB.
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-slate-700/60">
+              <Link to="/admissions" className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-center flex items-center justify-center gap-2 transition-all shadow-md">
+                Submit Application <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Card 4: Academics & 24x7 Helpdesk */}
+          <div className="bg-slate-800/90 rounded-3xl p-7 border border-slate-700 hover:border-purple-400 transition-all hover:-translate-y-1.5 shadow-xl flex flex-col justify-between group">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3.5 bg-purple-500/20 text-purple-400 rounded-2xl border border-purple-500/30">
+                  <BookOpen className="w-8 h-8" />
+                </div>
+                <span className="px-3 py-1 bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-full text-xs font-black uppercase">
+                  MAKAUT Syllabus
+                </span>
+              </div>
+              <h3 className="text-2xl font-black text-white group-hover:text-purple-400 transition-colors">Academics & 24x7 Support</h3>
+              <p className="mt-2 text-sm text-slate-300 font-medium leading-relaxed">
+                Official MAKAUT syllabus repository, semester academic calendar, anti-ragging grievance ticketing, and student helpdesk.
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-slate-700/60">
+              <Link to="/academics" className="w-full py-3.5 bg-purple-600 hover:bg-purple-500 text-white font-black rounded-xl text-center flex items-center justify-center gap-2 transition-all shadow-md">
+                View Academics & Helpdesk <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Card 5: Training & Placement Drives */}
+          <div className="bg-slate-800/90 rounded-3xl p-7 border border-slate-700 hover:border-cyan-400 transition-all hover:-translate-y-1.5 shadow-xl flex flex-col justify-between group">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3.5 bg-cyan-500/20 text-cyan-400 rounded-2xl border border-cyan-500/30">
+                  <Briefcase className="w-8 h-8" />
+                </div>
+                <span className="px-3 py-1 bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded-full text-xs font-black uppercase">
+                  T&P Cell
+                </span>
+              </div>
+              <h3 className="text-2xl font-black text-white group-hover:text-cyan-400 transition-colors">Campus Placement Drives</h3>
+              <p className="mt-2 text-sm text-slate-300 font-medium leading-relaxed">
+                Live recruitment drives (TCS, AWS, Cognizant) with real-time SGPA eligibility validation, salary package details, and instant applications.
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-slate-700/60">
+              <Link to="/placements" className="w-full py-3.5 bg-cyan-600 hover:bg-cyan-500 text-white font-black rounded-xl text-center flex items-center justify-center gap-2 transition-all shadow-md">
+                Explore Placement Drives <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Card 6: Administration & Department Control */}
+          <div className="bg-slate-800/90 rounded-3xl p-7 border border-slate-700 hover:border-rose-400 transition-all hover:-translate-y-1.5 shadow-xl flex flex-col justify-between group">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3.5 bg-rose-500/20 text-rose-400 rounded-2xl border border-rose-500/30">
+                  <Database className="w-8 h-8" />
+                </div>
+                <span className="px-3 py-1 bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-full text-xs font-black uppercase">
+                  Faculty & Admin
+                </span>
+              </div>
+              <h3 className="text-2xl font-black text-white group-hover:text-rose-400 transition-colors">Admin DB & HOD Control</h3>
+              <p className="mt-2 text-sm text-slate-300 font-medium leading-relaxed">
+                Manage student rosters, update attendance records, publish live campus broadcasts, and oversee online admission applications.
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-slate-700/60 flex gap-2">
+              <Link to="/hod-login" className="flex-1 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-center text-xs transition-all shadow-md">
+                HOD Portal
+              </Link>
+              <Link to="/admin-login" className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-white font-black rounded-xl text-center text-xs transition-all shadow-md border border-slate-600">
+                Admin Database
+              </Link>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
   )
 }
 
@@ -248,6 +593,9 @@ function HeroSection() {
           <Link to="/admissions" className="flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-8 py-4 text-lg font-bold text-slate-900 shadow-xl transition-transform hover:scale-105 w-full sm:w-auto">
             Apply Now <ArrowRight className="h-6 w-6" />
           </Link>
+          <Link to="/pay-fees" className="flex items-center justify-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 px-8 py-4 text-lg font-black text-slate-950 shadow-xl transition-transform hover:scale-105 w-full sm:w-auto">
+            <CreditCard className="w-6 h-6"/> Pay Online Fees
+          </Link>
           <button onClick={() => setActiveModal('brochure')} className="flex items-center justify-center gap-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 px-6 py-4 text-sm md:text-lg font-bold text-white shadow-xl transition-colors hover:bg-white/20 w-full sm:w-auto">
             <DownloadCloud className="w-5 h-5"/> Brochure
           </button>
@@ -296,7 +644,7 @@ function WhySVISTSection() {
   )
 }
 
-function DepartmentsSection() {
+export function DepartmentsSection() {
   return (
     <section className="bg-slate-50 py-24 border-t border-slate-200">
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
@@ -339,11 +687,8 @@ function NoticeBoard() {
 
   useEffect(() => {
     const fetchNotices = async () => {
-      try {
-        const response = await fetch("https://svist-college-portal.onrender.com/api/notices");
-        const data = await response.json();
-        setLiveNotices(data);
-      } catch (error) { console.error("Failed to fetch live notices"); }
+      const { data } = await apiFetch("/api/notices");
+      if (data) setLiveNotices(data);
     };
     fetchNotices();
   }, []);
@@ -401,10 +746,16 @@ function NoticeBoard() {
           <div className="flex flex-col justify-center">
             <h2 className="text-3xl font-black text-slate-900 tracking-tight">Quick Resources</h2>
             <p className="mt-2 text-slate-600 font-medium">Access your portals and administrative links</p>
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            <div className="mt-8 grid gap-4 sm:grid-cols-3">
               <Link to="/student-login" className="group rounded-2xl border border-slate-200 bg-white p-5 transition-all hover:border-[#1e3a8a] hover:shadow-md block">
                 <h3 className="font-bold text-slate-900 group-hover:text-[#1e3a8a] text-lg">Student Portal</h3>
                 <p className="mt-1 text-sm font-medium text-slate-600">Access LMS & Results</p>
+              </Link>
+              <Link to="/pay-fees" className="group rounded-2xl border border-emerald-200 bg-emerald-50/50 p-5 transition-all hover:border-emerald-500 hover:shadow-md block">
+                <h3 className="font-bold text-emerald-900 group-hover:text-emerald-700 text-lg flex items-center gap-1.5">
+                  <CreditCard className="w-5 h-5 text-emerald-600"/> Pay Online Fees
+                </h3>
+                <p className="mt-1 text-sm font-medium text-emerald-700">Tuition & Exam Gateway</p>
               </Link>
               <Link to="/placements" className="group rounded-2xl border border-slate-200 bg-white p-5 transition-all hover:border-[#1e3a8a] hover:shadow-md block">
                 <h3 className="font-bold text-slate-900 group-hover:text-[#1e3a8a] text-lg">Placement Cell</h3>
@@ -429,185 +780,6 @@ function NoticeBoard() {
   )
 }
 
-function AcademicsView() {
-  const [activeModal, setActiveModal] = useState(null);
-
-  return (
-    <div className="min-h-screen bg-slate-50 pt-32 pb-20 animate-in fade-in duration-500 relative">
-       {activeModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200">
-              <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50">
-                <h3 className="text-2xl font-black text-slate-900 flex items-center gap-3">
-                  {activeModal === 'calendar' ? <CalendarDays className="text-emerald-500"/> : <Scale className="text-purple-500"/>}
-                  {activeModal === 'calendar' ? 'Academic Calendar 2026-27' : 'Rules & Regulations'}
-                </h3>
-                <button onClick={() => setActiveModal(null)} className="p-2 bg-white hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-full transition-colors border border-slate-200"><X className="w-5 h-5" /></button>
-              </div>
-              <div className="p-8 max-h-[60vh] overflow-y-auto">
-                {activeModal === 'calendar' ? (
-                  <ul className="space-y-4">
-                    <li className="flex gap-4 p-4 bg-emerald-50 rounded-lg border border-emerald-100">
-                      <div className="text-emerald-600 font-black text-xl w-16 text-center">AUG</div>
-                      <div><p className="font-bold text-slate-900">Odd Semester Commences</p><p className="text-sm text-slate-600">Orientation for 1st Year Students.</p></div>
-                    </li>
-                    <li className="flex gap-4 p-4 bg-slate-50 rounded-lg border border-slate-100">
-                      <div className="text-slate-600 font-black text-xl w-16 text-center">OCT</div>
-                      <div><p className="font-bold text-slate-900">Internal Assessment (CA1 & CA2)</p><p className="text-sm text-slate-600">First phase of continuous evaluation.</p></div>
-                    </li>
-                    <li className="flex gap-4 p-4 bg-amber-50 rounded-lg border border-amber-100">
-                      <div className="text-amber-600 font-black text-xl w-16 text-center">DEC</div>
-                      <div><p className="font-bold text-slate-900">Practical Examinations</p><p className="text-sm text-slate-600">All departmental laboratory exams.</p></div>
-                    </li>
-                  </ul>
-                ) : (
-                  <div className="space-y-6 text-slate-700">
-                    <div>
-                      <h4 className="font-bold text-slate-900 text-lg mb-2">1. Attendance Mandate</h4>
-                      <p>As per MAKAUT guidelines, a minimum of 75% attendance in both theoretical and practical classes is strictly required to be eligible for end-semester examinations.</p>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-slate-900 text-lg mb-2">2. Anti-Ragging Policy</h4>
-                      <p>SVIST operates a zero-tolerance policy towards ragging. Any student found guilty of harassment or ragging will face immediate suspension and legal action under UGC guidelines.</p>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-slate-900 text-lg mb-2">3. Dress Code & Discipline</h4>
-                      <p>Students must adhere to the formal college uniform during lab hours and campus placements. Identity cards must be worn visibly at all times within campus premises.</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-       )}
-
-       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-3xl p-12 shadow-sm border border-slate-200 mb-8">
-             <div className="flex items-center gap-4 mb-8 border-b border-slate-200 pb-6">
-                <div className="bg-[#1e3a8a]/10 p-4 rounded-xl">
-                   <BookOpen className="w-10 h-10 text-[#1e3a8a]" />
-                </div>
-                <div>
-                   <h1 className="text-4xl font-black text-slate-900">Academic Excellence</h1>
-                   <p className="text-slate-500 font-medium mt-1">Affiliated to MAKAUT & Approved by AICTE</p>
-                </div>
-             </div>
-             
-             <div className="grid md:grid-cols-2 gap-8 mb-12">
-               <div className="bg-slate-50 p-8 rounded-2xl border border-slate-200">
-                 <h2 className="text-2xl font-bold text-slate-900 mb-4">Core Philosophy</h2>
-                 <p className="text-slate-600 leading-relaxed mb-4">SVIST adheres strictly to the rigorous, industry-aligned syllabus mandated by Maulana Abul Kalam Azad University of Technology (MAKAUT). Our mission is to bridge the gap between deep theoretical engineering and rapid practical deployment.</p>
-                 <p className="text-slate-600 leading-relaxed">Students engage deeply with core mathematics, advanced algorithms, and hands-on structural modeling, ensuring they are deployable engineers from day one.</p>
-               </div>
-               <div className="bg-[#1e3a8a] text-white p-8 rounded-2xl shadow-lg">
-                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-2"><Award className="text-amber-400" /> Academic Structure</h2>
-                 <ul className="space-y-5">
-                   <li className="flex items-start gap-3"><CheckCircle className="text-amber-400 w-6 h-6 shrink-0"/> <div><strong>8 Semesters over 4 Years</strong><br/><span className="text-blue-200 text-sm">Comprehensive theoretical and practical grounding.</span></div></li>
-                   <li className="flex items-start gap-3"><CheckCircle className="text-amber-400 w-6 h-6 shrink-0"/> <div><strong>Continuous Assessment (CA)</strong><br/><span className="text-blue-200 text-sm">4 internal exams per semester to track real-time progress.</span></div></li>
-                   <li className="flex items-start gap-3"><CheckCircle className="text-amber-400 w-6 h-6 shrink-0"/> <div><strong>Capstone Projects</strong><br/><span className="text-blue-200 text-sm">Final year focus on modern frameworks, AI/ML, and scalable infrastructure.</span></div></li>
-                 </ul>
-               </div>
-             </div>
-
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <a href="https://makautwb.ac.in/page.php?id=314" target="_blank" rel="noreferrer" className="p-6 border border-slate-200 rounded-xl hover:shadow-lg transition-all hover:-translate-y-1 hover:border-amber-400 cursor-pointer group block">
-                   <BookOpenCheck className="w-8 h-8 text-amber-500 mb-4 group-hover:scale-110 transition-transform" />
-                   <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">Syllabus Archive <LinkIcon className="w-4 h-4 text-slate-400"/></h3>
-                   <p className="text-sm text-slate-500 mt-2">Download official MAKAUT syllabus PDFs for all departments.</p>
-                </a>
-                <div onClick={() => setActiveModal('calendar')} className="p-6 border border-slate-200 rounded-xl hover:shadow-lg transition-all hover:-translate-y-1 hover:border-emerald-400 cursor-pointer group">
-                   <CalendarDays className="w-8 h-8 text-emerald-500 mb-4 group-hover:scale-110 transition-transform" />
-                   <h3 className="font-bold text-lg text-slate-900">Academic Calendar</h3>
-                   <p className="text-sm text-slate-500 mt-2">View upcoming examination dates, holidays, and semester breaks.</p>
-                </div>
-                <div onClick={() => setActiveModal('rules')} className="p-6 border border-slate-200 rounded-xl hover:shadow-lg transition-all hover:-translate-y-1 hover:border-purple-400 cursor-pointer group">
-                   <Scale className="w-8 h-8 text-purple-500 mb-4 group-hover:scale-110 transition-transform" />
-                   <h3 className="font-bold text-lg text-slate-900">Rules & Regulations</h3>
-                   <p className="text-sm text-slate-500 mt-2">Institution guidelines, attendance policies, and anti-ragging mandates.</p>
-                </div>
-             </div>
-          </div>
-       </div>
-    </div>
-  )
-}
-
-function ScholarshipsView() {
-  return (
-    <div className="min-h-screen bg-slate-50 pt-32 pb-20 animate-in fade-in duration-500">
-       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-[#1e3a8a] rounded-3xl p-12 shadow-xl border border-blue-800 text-white mb-12 overflow-hidden relative">
-             <div className="absolute top-0 right-0 opacity-10 pointer-events-none">
-                <Landmark className="w-96 h-96 -mt-20 -mr-20" />
-             </div>
-             <div className="relative z-10">
-               <h1 className="text-4xl md:text-5xl font-black mb-4">Scholarships & Financial Aid</h1>
-               <p className="text-xl text-blue-200 max-w-2xl font-medium">Empowering meritorious students through comprehensive financial support systems.</p>
-             </div>
-          </div>
-
-          <div className="space-y-12">
-             <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="bg-emerald-500 p-6 flex items-center gap-4 text-white">
-                   <Banknote className="w-8 h-8" />
-                   <h2 className="text-2xl font-black">State & Government Grants</h2>
-                </div>
-                <div className="p-8 md:p-12">
-                   <h3 className="text-2xl font-bold text-slate-900 mb-2">Swami Vivekananda Merit-cum-Means (SVMCM)</h3>
-                   <p className="text-slate-600 mb-6 max-w-3xl">A flagship scholarship program provided by the Government of West Bengal to assist meritorious students belonging to economically backward families in the state.</p>
-                   
-                   <div className="grid md:grid-cols-2 gap-6 mb-8">
-                     <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
-                        <h4 className="font-bold text-slate-900 mb-3 border-b border-slate-200 pb-2">Eligibility Criteria</h4>
-                        <ul className="space-y-2 text-sm text-slate-700">
-                          <li>• Domicile of West Bengal.</li>
-                          <li>• Minimum 60% marks in the last qualifying exam.</li>
-                          <li>• Family income must not exceed ₹2,50,000 per annum.</li>
-                        </ul>
-                     </div>
-                     <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
-                        <h4 className="font-bold text-slate-900 mb-3 border-b border-slate-200 pb-2">Grant Amount</h4>
-                        <p className="text-3xl font-black text-emerald-600">₹60,000 <span className="text-sm font-bold text-slate-500 uppercase tracking-widest">/ Year</span></p>
-                        <p className="text-sm text-slate-500 mt-2">Disbursed directly to the student's bank account.</p>
-                     </div>
-                   </div>
-                   <a href="https://svmcm.wbhed.gov.in/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 font-bold px-6 py-3 rounded-lg hover:bg-emerald-500 hover:text-white transition-colors">
-                     Apply on Official Portal <ArrowRight className="w-4 h-4"/>
-                   </a>
-                </div>
-             </div>
-
-             <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="bg-amber-500 p-6 flex items-center gap-4 text-slate-900">
-                   <Award className="w-8 h-8" />
-                   <h2 className="text-2xl font-black">Institutional Academic Excellence Awards</h2>
-                </div>
-                <div className="p-8 md:p-12">
-                   <h3 className="text-2xl font-bold text-slate-900 mb-2">SVIST Chairman's Waiver</h3>
-                   <p className="text-slate-600 mb-6 max-w-3xl">A dedicated institutional fund designed to reward exceptional academic performance during the WBJEE/JEE Mains entrance examinations.</p>
-                   
-                   <div className="grid md:grid-cols-2 gap-6 mb-8">
-                     <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
-                        <h4 className="font-bold text-slate-900 mb-3 border-b border-slate-200 pb-2">Waiver Tiers (WBJEE Rank)</h4>
-                        <ul className="space-y-2 text-sm text-slate-700">
-                          <li>• Rank 1 - 5000: <strong className="text-amber-600">100% Tuition Waiver</strong></li>
-                          <li>• Rank 5001 - 10000: <strong className="text-amber-600">50% Tuition Waiver</strong></li>
-                          <li>• Semester Toppers: <strong className="text-amber-600">₹10,000 Reward</strong></li>
-                        </ul>
-                     </div>
-                     <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 flex flex-col justify-center items-center text-center">
-                        <Wallet className="w-12 h-12 text-slate-400 mb-3" />
-                        <p className="text-sm font-bold text-slate-500">Contact the SVIST Admissions Cell directly during counseling to claim this institutional waiver.</p>
-                     </div>
-                   </div>
-                </div>
-             </div>
-          </div>
-       </div>
-    </div>
-  )
-}
-
 function AdmissionsView() {
   const [formData, setFormData] = useState({ name: "", email: "", phone: "", department: "Computer Science & Engineering", rank: "" });
   const [status, setStatus] = useState("");
@@ -617,20 +789,15 @@ function AdmissionsView() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus("Submitting to Admin Database...");
-    try {
-      const response = await fetch("https://svist-college-portal.onrender.com/api/admissions", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formData)
-      });
-      if (response.ok) {
-        setStatus("SUCCESS: Application Sent to Admin Cell.");
-        setFormData({ name: "", email: "", phone: "", department: "Computer Science & Engineering", rank: "" });
-        setTimeout(() => setStatus(""), 5000);
-      } else {
-        setStatus("ERROR: Application failed to submit.");
-      }
-    } catch (err) {
-      console.error(err);
-      setStatus("ERROR: Network Connection Failed.");
+    const { data, error } = await apiFetch("/api/admissions", {
+      method: "POST", body: JSON.stringify(formData)
+    });
+    if (data) {
+      setStatus("SUCCESS: Application Sent to Admin Cell.");
+      setFormData({ name: "", email: "", phone: "", department: "Computer Science & Engineering", rank: "" });
+      setTimeout(() => setStatus(""), 5000);
+    } else {
+      setStatus(error || "ERROR: Application failed to submit.");
     }
   };
 
@@ -688,950 +855,6 @@ function AdmissionsView() {
              </form>
           </div>
        </div>
-    </div>
-  )
-}
-
-function PlacementsView() {
-  const recruiters = ["TCS", "Cognizant", "Wipro", "Infosys", "IBM", "Tech Mahindra", "Amazon", "Capgemini", "Accenture", "L&T"];
-  
-  return (
-    <div className="min-h-screen bg-slate-50 pt-32 pb-20 animate-in fade-in duration-500">
-       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-[#1e3a8a] rounded-3xl p-12 shadow-xl border border-blue-800 text-white mb-8 overflow-hidden relative">
-             <div className="absolute top-0 right-0 opacity-10 pointer-events-none">
-                <Briefcase className="w-96 h-96 -mt-20 -mr-20" />
-             </div>
-             <div className="relative z-10">
-               <h1 className="text-4xl md:text-5xl font-black mb-4">Training & Placement Cell</h1>
-               <p className="text-xl text-blue-200 max-w-2xl font-medium">Achieving excellence with a consistent track record. We empower students to secure elite software engineering roles at top-tier multinational corporations.</p>
-             </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm text-center transform transition-transform hover:-translate-y-1">
-              <TrendingUp className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
-              <h3 className="text-4xl font-black text-slate-900 mb-2">12+ LPA</h3>
-              <p className="text-slate-500 font-bold uppercase tracking-wider text-sm">Target & Highest Package</p>
-            </div>
-            <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm text-center transform transition-transform hover:-translate-y-1">
-              <Users className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-              <h3 className="text-4xl font-black text-slate-900 mb-2">95%</h3>
-              <p className="text-slate-500 font-bold uppercase tracking-wider text-sm">Placement Rate</p>
-            </div>
-            <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm text-center transform transition-transform hover:-translate-y-1">
-              <Building2 className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-              <h3 className="text-4xl font-black text-slate-900 mb-2">50+</h3>
-              <p className="text-slate-500 font-bold uppercase tracking-wider text-sm">Recruiting Partners</p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-3xl p-8 md:p-12 shadow-sm border border-slate-200">
-             <h2 className="text-3xl font-black text-slate-900 mb-8 text-center border-b border-slate-100 pb-4">Our Top Recruiting Partners</h2>
-             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6">
-                {recruiters.map((company, idx) => (
-                  <div key={idx} className="p-4 border border-slate-100 bg-slate-50 rounded-xl flex items-center justify-center font-black text-slate-700 text-lg hover:bg-[#1e3a8a] hover:text-white transition-colors cursor-pointer shadow-sm text-center">
-                    {company}
-                  </div>
-                ))}
-             </div>
-          </div>
-       </div>
-    </div>
-  )
-}
-
-function DepartmentDetailView() {
-  const { slug } = useParams();
-  const [activeModal, setActiveModal] = useState(null);
-  const [facultyRoster, setFacultyRoster] = useState([]);
-  const dept = departments.find(d => d.slug === slug);
-
-  useEffect(() => {
-    if(!dept) return;
-    const fetchFaculty = async () => {
-      try {
-        const response = await fetch("https://svist-college-portal.onrender.com/api/faculty");
-        const data = await response.json();
-        const deptFaculty = data.filter(f => f.department === dept.shortName);
-        setFacultyRoster(deptFaculty);
-      } catch(err) { console.error(err); }
-    }
-    fetchFaculty();
-  }, [dept]);
-
-  if (!dept) return <PageTemplate title="Department Not Found" icon={AlertCircle} description="The requested department does not exist in our system." />;
-
-  return (
-    <div className="min-h-screen bg-slate-50 pt-32 pb-20 animate-in fade-in duration-500 relative">
-       
-       {activeModal === 'faculty' && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200">
-              <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50">
-                <h3 className="text-2xl font-black text-slate-900 flex items-center gap-3">
-                  <Users className="text-[#1e3a8a]"/> {dept.shortName} Faculty Roster
-                </h3>
-                <button onClick={() => setActiveModal(null)} className="p-2 bg-white hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-full transition-colors border border-slate-200"><X className="w-5 h-5" /></button>
-              </div>
-              <div className="p-8 max-h-[60vh] overflow-y-auto">
-                 {facultyRoster.length === 0 ? (
-                    <div className="text-center py-10">
-                       <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                       <p className="text-slate-500 font-medium">No faculty members assigned yet.</p>
-                       <p className="text-xs font-bold text-slate-400 uppercase mt-1">Admin must inject records via Database.</p>
-                    </div>
-                 ) : (
-                    <ul className="space-y-4">
-                      {facultyRoster.map((fac) => (
-                        <li key={fac._id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 border border-slate-200 rounded-xl hover:shadow-md transition-shadow">
-                           <div className="w-12 h-12 shrink-0 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-black">
-                             {fac.designation === "HOD" ? "HOD" : "AP"}
-                           </div>
-                           <div>
-                             <p className="font-bold text-slate-900 text-lg">{fac.name}</p>
-                             <p className="text-slate-500 text-sm">{fac.designation}, {fac.qualification}</p>
-                           </div>
-                        </li>
-                      ))}
-                    </ul>
-                 )}
-              </div>
-            </div>
-          </div>
-       )}
-
-       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative h-64 md:h-80 rounded-3xl overflow-hidden mb-8 shadow-xl">
-             <img src={dept.image} alt={dept.name} className="w-full h-full object-cover" />
-             <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent"></div>
-             <div className="absolute bottom-6 left-6 md:bottom-10 md:left-10 flex items-center gap-4 md:gap-6">
-                <div className="bg-amber-400 p-3 md:p-4 rounded-2xl shadow-lg hidden sm:block">
-                   <dept.icon className="w-10 h-10 md:w-12 md:h-12 text-slate-900" />
-                </div>
-                <div>
-                  <h1 className="text-3xl md:text-4xl font-black text-white leading-tight">{dept.name}</h1>
-                  <p className="text-amber-400 font-bold tracking-widest mt-1 text-sm md:text-base">DEPARTMENT CODE: {dept.shortName}</p>
-                </div>
-             </div>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-             <div className="md:col-span-2 space-y-8">
-                <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
-                   <h2 className="text-2xl font-bold text-slate-900 mb-4">About the Department</h2>
-                   <p className="text-slate-600 leading-relaxed mb-4">{dept.description} We focus on intense practical implementation alongside rigorous theoretical understanding.</p>
-                   <p className="text-slate-600 leading-relaxed">Students are encouraged to engage in modern frameworks, robust design, and deep system architecture optimization under the guidance of our expert faculty.</p>
-                </div>
-
-                <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
-                   <h2 className="text-2xl font-bold text-slate-900 mb-6 border-b border-slate-100 pb-3 flex items-center gap-2"><FlaskConical className="text-amber-500" /> Advanced Laboratories</h2>
-                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {dept.labs.map((lab, idx) => (
-                        <div key={idx} className="relative group overflow-hidden rounded-xl h-48 border border-slate-200 shadow-sm cursor-pointer">
-                           <img src={lab.img} alt={lab.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 to-transparent"></div>
-                           <div className="absolute bottom-4 left-4 right-4">
-                             <p className="text-white font-bold text-sm tracking-wide">{lab.name}</p>
-                           </div>
-                        </div>
-                      ))}
-                   </div>
-                </div>
-             </div>
-
-             <div className="space-y-8">
-                <div className="bg-[#1e3a8a] text-white p-8 rounded-2xl shadow-lg sticky top-24">
-                   <h2 className="text-xl font-bold mb-6 border-b border-blue-800 pb-3">Quick Links</h2>
-                   <ul className="space-y-5 font-medium">
-                      <li onClick={() => setActiveModal('faculty')} className="flex items-center gap-3 hover:text-amber-400 cursor-pointer transition-colors group">
-                        <div className="bg-white/10 p-2 rounded group-hover:bg-amber-400/20"><Users className="w-4 h-4"/></div> Faculty Roster
-                      </li>
-                      <li>
-                        <a href="https://makautwb.ac.in/page.php?id=314" target="_blank" rel="noreferrer" className="flex items-center gap-3 hover:text-amber-400 cursor-pointer transition-colors group">
-                          <div className="bg-white/10 p-2 rounded group-hover:bg-amber-400/20"><DownloadCloud className="w-4 h-4"/></div> Syllabus PDF <LinkIcon className="w-3 h-3 opacity-50"/>
-                        </a>
-                      </li>
-                      <li onClick={() => alert("Redirecting to Alumni Network...")} className="flex items-center gap-3 hover:text-amber-400 cursor-pointer transition-colors group">
-                        <div className="bg-white/10 p-2 rounded group-hover:bg-amber-400/20"><GraduationCap className="w-4 h-4"/></div> Alumni Network
-                      </li>
-                   </ul>
-                </div>
-             </div>
-          </div>
-       </div>
-    </div>
-  )
-}
-
-function StudentLoginView() {
-  const [token, setToken] = useState("");
-  const [studentData, setStudentData] = useState(null);
-  const [loginData, setLoginData] = useState({ rollNumber: "", password: "" });
-  const [error, setError] = useState("");
-  const [activeModal, setActiveModal] = useState(null); 
-
-  const handleChange = (e) => setLoginData({ ...loginData, [e.target.name]: e.target.value });
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError("");
-    try {
-      const response = await fetch("https://svist-college-portal.onrender.com/api/students/login", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(loginData),
-      });
-      const data = await response.json();
-      
-      if (response.ok) {
-        setToken(data.token);
-        setStudentData(data.studentData);
-      } else {
-        setError(data.error || "Login Failed.");
-      }
-    } catch (err) {
-      setError("Network error. Bridge to Atlas failed.");
-      console.error(err);
-    }
-  };
-
-  const handleLogout = () => {
-    setToken(""); setStudentData(null); setLoginData({ rollNumber: "", password: "" }); setActiveModal(null);
-  };
-
-  if (token && studentData) {
-    return (
-      <div className="min-h-screen bg-slate-50 pt-32 pb-20 animate-in fade-in duration-500">
-        <div className="mx-auto max-w-5xl px-4 relative">
-          
-          {activeModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200">
-                <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50">
-                  <h3 className="text-2xl font-black text-slate-900 flex items-center gap-3">
-                    {activeModal === 'attendance' ? <Activity className="text-emerald-500"/> : <Calendar className="text-purple-500"/>}
-                    {activeModal === 'attendance' ? 'Attendance Overview' : 'Class Routine Matrix'}
-                  </h3>
-                  <button onClick={() => setActiveModal(null)} className="p-2 bg-white hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-full transition-colors border border-slate-200">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-                <div className="p-8">
-                  {activeModal === 'attendance' ? (
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                         <span className="font-bold text-slate-700 text-lg">Overall Synchronization</span>
-                         <span className="font-black text-emerald-600 text-2xl">{studentData.attendance}%</span>
-                      </div>
-                      <div className="w-full bg-slate-100 rounded-full h-4 mb-8 overflow-hidden shadow-inner">
-                         <div className="bg-emerald-500 h-4 rounded-full relative overflow-hidden transition-all duration-1000" style={{ width: `${studentData.attendance}%` }}>
-                           <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
-                         </div>
-                      </div>
-                      <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 text-center">
-                         <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Status</p>
-                         <p className={`text-xl font-black ${studentData.attendance >= 75 ? 'text-emerald-600' : 'text-red-600'}`}>
-                           {studentData.attendance >= 75 ? "Eligible for Examinations" : "Warning: Below 75% Threshold"}
-                         </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="bg-slate-900 text-white">
-                            <th className="p-4 text-xs font-bold uppercase tracking-wider">Day</th>
-                            <th className="p-4 text-xs font-bold uppercase tracking-wider">10:00 AM - 12:00 PM</th>
-                            <th className="p-4 text-xs font-bold uppercase tracking-wider">01:00 PM - 03:00 PM</th>
-                          </tr>
-                        </thead>
-                        <tbody className="text-sm">
-                          <tr className="border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors">
-                            <td className="p-4 font-black text-slate-900 border-r border-slate-100">Monday</td>
-                            <td className="p-4 text-slate-700 font-medium bg-indigo-50/50">Discrete Mathematics</td>
-                            <td className="p-4 text-slate-700 font-medium">Economics for Engineers</td>
-                          </tr>
-                          <tr className="border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors">
-                            <td className="p-4 font-black text-slate-900 border-r border-slate-100">Tuesday</td>
-                            <td className="p-4 text-slate-700 font-medium bg-amber-50/50">Computer Organization & Arch.</td>
-                            <td className="p-4 text-slate-700 font-medium text-[#1e3a8a] font-bold">COA Practical Lab</td>
-                          </tr>
-                          <tr className="border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors">
-                            <td className="p-4 font-black text-slate-900 border-r border-slate-100">Wednesday</td>
-                            <td className="p-4 text-slate-700 font-medium">Design & Analysis of Algorithms</td>
-                            <td className="p-4 text-slate-700 font-bold text-[#1e3a8a]">DAA Practical Lab</td>
-                          </tr>
-                          <tr className="border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors">
-                            <td className="p-4 font-black text-slate-900 border-r border-slate-100">Thursday</td>
-                            <td className="p-4 text-slate-700 font-medium">Formal Language & Automata Theory</td>
-                            <td className="p-4 text-slate-700 font-medium bg-emerald-50/50">Project Discussion / Review</td>
-                          </tr>
-                          <tr className="bg-white hover:bg-slate-50 transition-colors">
-                            <td className="p-4 font-black text-slate-900 border-r border-slate-100">Friday</td>
-                            <td className="p-4 text-slate-700 font-medium">IT Workshop (SciLab/Python)</td>
-                            <td className="p-4 text-slate-700 font-medium">Values & Ethics in Profession</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
-            <div className="bg-[#1e3a8a] p-8 text-white relative overflow-hidden">
-               <div className="absolute top-0 right-0 opacity-10 pointer-events-none"><GraduationCap className="w-64 h-64 -mt-10 -mr-10" /></div>
-               <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                  <div>
-                    <h1 className="text-3xl font-black tracking-tight">Welcome, {studentData.name}</h1>
-                    <p className="mt-1 text-blue-200 font-medium">Student Academic Portal</p>
-                  </div>
-                  <button onClick={handleLogout} className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-5 py-2.5 rounded-lg font-bold transition-colors shadow-md">
-                     <LogOut className="w-5 h-5" /> Terminate Session
-                  </button>
-               </div>
-            </div>
-
-            <div className="p-8">
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 shadow-sm hover:-translate-y-1 transition-transform">
-                     <p className="text-xs font-bold text-slate-500 uppercase mb-1 tracking-wider">Roll Number</p>
-                     <p className="text-2xl font-black text-slate-900">{studentData.rollNumber}</p>
-                  </div>
-                  <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 shadow-sm border-b-4 border-b-[#1e3a8a] hover:-translate-y-1 transition-transform">
-                     <p className="text-xs font-bold text-slate-500 uppercase mb-1 tracking-wider">Department</p>
-                     <p className="text-2xl font-black text-[#1e3a8a]">{studentData.department}</p>
-                  </div>
-                  <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 shadow-sm border-b-4 border-b-amber-500 hover:-translate-y-1 transition-transform">
-                     <p className="text-xs font-bold text-slate-500 uppercase mb-1 tracking-wider">Semester</p>
-                     <p className="text-2xl font-black text-amber-500">Sem {studentData.semester}</p>
-                  </div>
-               </div>
-               
-               <h3 className="text-xl font-bold text-slate-900 mt-10 mb-6 border-b border-slate-100 pb-3">Academic Shortcuts</h3>
-               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                  <a href="https://makaut1.ucanapply.com/" target="_blank" rel="noreferrer" className="p-6 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-[#1e3a8a] transition-all cursor-pointer text-center group block hover:-translate-y-1">
-                     <BookOpen className="w-8 h-8 text-[#1e3a8a] mx-auto mb-3 group-hover:scale-110 transition-transform" />
-                     <p className="font-bold text-slate-900 text-sm">Access LMS</p>
-                  </a>
-                  <a href="https://makautexam.net/" target="_blank" rel="noreferrer" className="p-6 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-amber-500 transition-all cursor-pointer text-center group block hover:-translate-y-1">
-                     <FileText className="w-8 h-8 text-amber-500 mx-auto mb-3 group-hover:scale-110 transition-transform" />
-                     <p className="font-bold text-slate-900 text-sm">Exam Results</p>
-                  </a>
-                  <button onClick={() => setActiveModal('attendance')} className="p-6 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-emerald-500 transition-all cursor-pointer text-center group block w-full hover:-translate-y-1">
-                     <Activity className="w-8 h-8 text-emerald-500 mx-auto mb-3 group-hover:scale-110 transition-transform" />
-                     <p className="font-bold text-slate-900 text-sm">Attendance</p>
-                  </button>
-                  <button onClick={() => setActiveModal('routine')} className="p-6 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-purple-500 transition-all cursor-pointer text-center group block w-full hover:-translate-y-1">
-                     <Calendar className="w-8 h-8 text-purple-500 mx-auto mb-3 group-hover:scale-110 transition-transform" />
-                     <p className="font-bold text-slate-900 text-sm">Class Routine</p>
-                  </button>
-               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-slate-100 pt-32 pb-20 flex items-center justify-center animate-in fade-in zoom-in-95 duration-300">
-      <div className="max-w-md w-full mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200">
-        <div className="bg-[#1e3a8a] p-8 text-center relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-full bg-black/10"></div>
-          <div className="bg-white p-3 rounded-full w-20 h-20 mx-auto flex items-center justify-center mb-4 shadow-lg relative z-10">
-            <GraduationCap className="h-10 w-10 text-[#1e3a8a]" />
-          </div>
-          <h2 className="text-2xl font-bold text-white relative z-10">Student Portal</h2>
-          <p className="text-white/80 text-sm mt-1 relative z-10">Access LMS, Results & Attendance</p>
-        </div>
-        <div className="p-8">
-          {error && <div className="mb-6 bg-red-50 text-red-600 border border-red-200 rounded-lg p-3 text-sm font-bold text-center flex items-center justify-center gap-2"><AlertCircle className="w-5 h-5" /> {error}</div>}
-          <form className="space-y-6" onSubmit={handleLogin}>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">University Roll Number</label>
-              <input type="text" name="rollNumber" value={loginData.rollNumber} onChange={handleChange} required className="w-full rounded-lg border border-slate-300 px-4 py-3 focus:border-[#1e3a8a] focus:ring-2 focus:ring-[#1e3a8a] outline-none transition-all" placeholder="Enter your roll number" />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Password</label>
-              <input type="password" name="password" value={loginData.password} onChange={handleChange} required className="w-full rounded-lg border border-slate-300 px-4 py-3 focus:border-[#1e3a8a] focus:ring-2 focus:ring-[#1e3a8a] outline-none transition-all" placeholder="••••••••" />
-            </div>
-            <button type="submit" className="w-full rounded-lg bg-[#1e3a8a] py-4 text-center font-bold text-white transition-colors hover:bg-blue-900 text-lg shadow-md">Secure Login</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function HODLoginView() {
-  const [token, setToken] = useState("");
-  const [loginData, setLoginData] = useState({ username: "", password: "" });
-  
-  const [notices, setNotices] = useState([]);
-  const [editingNoticeId, setEditingNoticeId] = useState(null);
-  const [noticeData, setNoticeData] = useState({ title: "", category: "Academic Notice", description: "", documentUrl: "" });
-  const [status, setStatus] = useState("");
-  
-  const [students, setStudents] = useState([]);
-  const [attendanceVals, setAttendanceVals] = useState({});
-
-  const handleLoginChange = (e) => setLoginData({ ...loginData, [e.target.name]: e.target.value });
-  const handleNoticeChange = (e) => setNoticeData({ ...noticeData, [e.target.name]: e.target.value });
-
-  const fetchStudents = async () => {
-    try {
-      const response = await fetch("https://svist-college-portal.onrender.com/api/students");
-      const data = await response.json();
-      setStudents(data);
-      const initialVals = {};
-      data.forEach(s => initialVals[s._id] = s.attendance || 0);
-      setAttendanceVals(initialVals);
-    } catch (error) { console.error("Failed to fetch students"); }
-  };
-
-  const fetchNotices = async () => {
-    try {
-      const response = await fetch("https://svist-college-portal.onrender.com/api/notices");
-      const data = await response.json();
-      setNotices(data);
-    } catch (error) { console.error("Failed to fetch notices"); }
-  }
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch("https://svist-college-portal.onrender.com/api/hod/login", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(loginData),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setToken(data.token);
-        fetchStudents(); 
-        fetchNotices();
-      } else alert("ACCESS DENIED: " + data.error);
-    } catch (error) { console.error("Login failed"); }
-  };
-
-  const handleBroadcast = async (e) => {
-    e.preventDefault();
-    setStatus("Broadcasting...");
-    
-    const url = editingNoticeId ? `https://svist-college-portal.onrender.com/api/notices/${editingNoticeId}` : "https://svist-college-portal.onrender.com/api/notices";
-    const method = editingNoticeId ? "PUT" : "POST";
-
-    try {
-      const response = await fetch(url, {
-        method: method, headers: { "Content-Type": "application/json", "Authorization": token }, body: JSON.stringify(noticeData),
-      });
-      if (response.ok) {
-        setStatus(`SUCCESS: Notice ${editingNoticeId ? 'Updated' : 'Broadcasted'}!`);
-        setNoticeData({ title: "", category: "Academic Notice", description: "", documentUrl: "" });
-        setEditingNoticeId(null);
-        fetchNotices(); 
-        setTimeout(() => setStatus(""), 4000); 
-      } else setStatus("FAILED: Master Key rejected.");
-    } catch (error) { setStatus("FAILED: Network error."); }
-  };
-
-  const handleDeleteNotice = async (id) => {
-     if(!window.confirm("Delete this notice permanently?")) return;
-     try {
-        const response = await fetch(`https://svist-college-portal.onrender.com/api/notices/${id}`, {
-           method: "DELETE", headers: {"Authorization": token}
-        });
-        if(response.ok) fetchNotices();
-     } catch(err) { console.error(err); }
-  }
-
-  const handleEditNotice = (n) => {
-     setEditingNoticeId(n._id);
-     setNoticeData({ title: n.title, category: n.category, description: n.description, documentUrl: n.documentUrl || "" });
-  }
-
-  const updateAttendance = async (id) => {
-    try {
-      const response = await fetch(`https://svist-college-portal.onrender.com/api/students/${id}/attendance`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", "Authorization": token },
-        body: JSON.stringify({ attendance: attendanceVals[id] })
-      });
-      if (response.ok) {
-        alert("Attendance Sync Successful!");
-        fetchStudents();
-      } else {
-        alert("Failed to sync attendance. Check credentials.");
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-50 pt-32 pb-20 animate-in fade-in duration-500">
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-          
-          <div className="bg-amber-500 p-8 text-slate-900 border-b border-amber-600">
-            <div className="flex items-center gap-4">
-              <ShieldAlert className="h-10 w-10 text-slate-900" />
-              <div>
-                <h1 className="text-3xl font-black tracking-tight">HOD Command Console</h1>
-                <p className="mt-1 font-semibold text-slate-800">
-                  {token ? 'Connection Secured: Broadcast & Academic Controls Active' : 'Authorized Department Heads Only'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-8">
-            {!token ? (
-              <div className="text-center py-8 max-w-sm mx-auto animate-in zoom-in-95">
-                 <Lock className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-                 <h2 className="text-2xl font-black text-slate-900 mb-2">HOD Authentication</h2>
-                 <form onSubmit={handleLogin} className="space-y-4 mt-6">
-                   <input type="text" name="username" placeholder="HOD Username" value={loginData.username} onChange={handleLoginChange} required className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500 text-center font-bold text-slate-700" />
-                   <input type="password" name="password" placeholder="HOD Password" value={loginData.password} onChange={handleLoginChange} required className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500 text-center font-bold text-slate-700" />
-                   <button type="submit" className="w-full px-8 py-4 mt-2 bg-slate-900 text-white font-black uppercase tracking-wider rounded-lg hover:bg-black shadow-lg transition-transform hover:-translate-y-1">Verify Credentials</button>
-                 </form>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4">
-                
-                <div className="bg-slate-50 p-8 rounded-xl border border-slate-200">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                      <Radio className="w-6 h-6 text-amber-500 animate-pulse" /> Live Network Broadcast
-                    </h2>
-                    {status && <span className={`text-sm font-bold ${status.includes("SUCCESS") ? "text-emerald-600" : "text-amber-600"}`}>{status}</span>}
-                  </div>
-                  
-                  <form className="space-y-4 mb-8" onSubmit={handleBroadcast}>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Notice Title</label>
-                      <input type="text" name="title" value={noticeData.title} onChange={handleNoticeChange} required className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-amber-500 focus:ring-2 focus:ring-amber-500 outline-none" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Category</label>
-                      <select name="category" value={noticeData.category} onChange={handleNoticeChange} className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-amber-500 focus:ring-2 focus:ring-amber-500 outline-none">
-                        <option>Academic Notice</option>
-                        <option>Urgent Announcement</option>
-                        <option>Campus Event</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Document Link (PDF/Drive URL)</label>
-                      <input type="url" name="documentUrl" placeholder="https://..." value={noticeData.documentUrl} onChange={handleNoticeChange} className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-amber-500 focus:ring-2 focus:ring-amber-500 outline-none" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Detailed Message</label>
-                      <textarea name="description" value={noticeData.description} onChange={handleNoticeChange} required rows="3" className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-amber-500 focus:ring-2 focus:ring-amber-500 outline-none"></textarea>
-                    </div>
-                    
-                    <div className="flex gap-2">
-                       <button type="submit" className="flex-1 rounded-lg bg-amber-500 py-3 text-center font-bold text-slate-900 transition-colors hover:bg-amber-400 shadow-md flex items-center justify-center gap-2">
-                         <Send className="w-5 h-5" /> {editingNoticeId ? 'Update Notice' : 'Push to Home Page'}
-                       </button>
-                       {editingNoticeId && (
-                         <button type="button" onClick={() => {setEditingNoticeId(null); setNoticeData({ title: "", category: "Academic Notice", description: "", documentUrl: "" })}} className="px-4 py-3 rounded-lg border border-slate-300 font-bold text-slate-500 hover:bg-slate-200">Cancel</button>
-                       )}
-                    </div>
-                  </form>
-
-                  <div className="mt-8 border-t border-slate-200 pt-6">
-                     <h3 className="text-sm font-bold text-slate-500 uppercase mb-4 tracking-widest">Active Broadcasts</h3>
-                     <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-                        {notices.map(n => (
-                           <div key={n._id} className="bg-white p-3 rounded-lg border border-slate-200 flex justify-between items-start gap-4">
-                              <div>
-                                 <p className="font-bold text-sm text-slate-900">{n.title}</p>
-                                 <p className="text-xs text-slate-500 mt-1">{n.date}</p>
-                              </div>
-                              <div className="flex gap-1 shrink-0">
-                                 <button onClick={() => handleEditNotice(n)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Edit className="w-4 h-4"/></button>
-                                 <button onClick={() => handleDeleteNotice(n._id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4"/></button>
-                              </div>
-                           </div>
-                        ))}
-                     </div>
-                  </div>
-                </div>
-
-                <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 flex flex-col">
-                   <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
-                     <Percent className="w-6 h-6 text-emerald-500" />
-                     <h2 className="text-xl font-bold text-slate-900">Student Attendance Sync</h2>
-                   </div>
-                   <div className="flex-1 overflow-y-auto max-h-[600px] pr-2">
-                     {students.length === 0 ? (
-                       <p className="text-center text-slate-400 mt-10">No students registered in database.</p>
-                     ) : (
-                       <ul className="space-y-4">
-                         {students.map((student) => (
-                           <li key={student._id} className="bg-slate-50 border border-slate-200 rounded-lg p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all hover:border-emerald-300 hover:shadow-md">
-                             <div>
-                               <p className="font-black text-slate-900">{student.name}</p>
-                               <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Roll: {student.rollNumber} | Sem {student.semester}</p>
-                             </div>
-                             <div className="flex items-center gap-3">
-                               <input 
-                                 type="number" min="0" max="100" 
-                                 value={attendanceVals[student._id] !== undefined ? attendanceVals[student._id] : student.attendance}
-                                 onChange={(e) => setAttendanceVals({...attendanceVals, [student._id]: e.target.value})}
-                                 className="w-20 rounded-lg border border-slate-300 px-3 py-2 text-center font-bold text-slate-700 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
-                               />
-                               <span className="font-bold text-slate-400">%</span>
-                               <button onClick={() => updateAttendance(student._id)} className="px-4 py-2 bg-emerald-100 hover:bg-emerald-500 text-emerald-700 hover:text-white rounded-lg font-bold transition-colors text-sm shadow-sm">
-                                 Update
-                               </button>
-                             </div>
-                           </li>
-                         ))}
-                       </ul>
-                     )}
-                   </div>
-                </div>
-
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function AdminLoginView() {
-  const [token, setToken] = useState("");
-  const [loginData, setLoginData] = useState({ username: "", password: "" });
-  
-  const [activeTab, setActiveTab] = useState("students"); 
-
-  const [formData, setFormData] = useState({ name: "", rollNumber: "", department: "CSE", semester: "" });
-  const [students, setStudents] = useState([]);
-  const [editingId, setEditingId] = useState(null); 
-
-  const [facultyData, setFacultyData] = useState({ name: "", department: "CSE", designation: "Assistant Professor", qualification: "M.Tech" });
-  const [facultyList, setFacultyList] = useState([]);
-
-  const [admissionsList, setAdmissionsList] = useState([]);
-
-  const fetchStudents = async () => {
-    try {
-      const response = await fetch("https://svist-college-portal.onrender.com/api/students");
-      setStudents(await response.json());
-    } catch (error) { console.error("Failed to fetch students"); }
-  };
-
-  const fetchFaculty = async () => {
-    try {
-      const response = await fetch("https://svist-college-portal.onrender.com/api/faculty");
-      setFacultyList(await response.json());
-    } catch (error) { console.error("Failed to fetch faculty"); }
-  };
-
-  const fetchAdmissions = async () => {
-    try {
-      const response = await fetch("https://svist-college-portal.onrender.com/api/admissions", {
-        headers: { "Authorization": token }
-      });
-      setAdmissionsList(await response.json());
-    } catch (error) { console.error("Failed to fetch admissions"); }
-  };
-
-  useEffect(() => { 
-    if(token) {
-      fetchStudents(); 
-      fetchFaculty();
-      fetchAdmissions();
-    }
-  }, [token]);
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch("https://svist-college-portal.onrender.com/api/admin/login", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(loginData),
-      });
-      const data = await response.json();
-      if (response.ok) {
-         setToken(data.token);
-      }
-      else alert("ACCESS DENIED: " + data.error);
-    } catch (error) { console.error("Login failed"); }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const url = editingId ? `https://svist-college-portal.onrender.com/api/students/${editingId}` : "https://svist-college-portal.onrender.com/api/students";
-    const method = editingId ? "PUT" : "POST";
-    try {
-      const response = await fetch(url, {
-        method: method, headers: { "Content-Type": "application/json", "Authorization": token }, body: JSON.stringify(formData),
-      });
-      if (response.ok) {
-        setFormData({ name: "", rollNumber: "", department: "CSE", semester: "" }); 
-        setEditingId(null); fetchStudents(); 
-      } else alert("Transaction Failed.");
-    } catch (error) { console.error("Failed to submit"); }
-  };
-
-  const handleDelete = async (id) => {
-    if (!window.confirm("WARNING: Purge student from Atlas?")) return;
-    try {
-      const response = await fetch(`https://svist-college-portal.onrender.com/api/students/${id}`, {
-        method: "DELETE", headers: { "Authorization": token }
-      });
-      if (response.ok) fetchStudents(); 
-    } catch (error) { console.error("Failed to delete"); }
-  };
-
-  const handleFacultySubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch("https://svist-college-portal.onrender.com/api/faculty", {
-        method: "POST", headers: { "Content-Type": "application/json", "Authorization": token }, body: JSON.stringify(facultyData),
-      });
-      if (response.ok) {
-        setFacultyData({ name: "", department: "CSE", designation: "Assistant Professor", qualification: "M.Tech" }); 
-        fetchFaculty(); 
-      } else alert("Transaction Failed.");
-    } catch (error) { console.error("Failed to submit"); }
-  };
-
-  const handleFacultyDelete = async (id) => {
-    if (!window.confirm("WARNING: Purge faculty from Atlas?")) return;
-    try {
-      const response = await fetch(`https://svist-college-portal.onrender.com/api/faculty/${id}`, {
-        method: "DELETE", headers: { "Authorization": token }
-      });
-      if (response.ok) fetchFaculty(); 
-    } catch (error) { console.error("Failed to delete"); }
-  };
-
-  const handleAdmissionDelete = async (id) => {
-    if (!window.confirm("Process/Archive this application?")) return;
-    try {
-      const response = await fetch(`https://svist-college-portal.onrender.com/api/admissions/${id}`, {
-        method: "DELETE", headers: { "Authorization": token }
-      });
-      if (response.ok) fetchAdmissions(); 
-    } catch (error) { console.error("Failed to delete"); }
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-50 pt-32 pb-20 animate-in fade-in duration-500">
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-          
-          <div className="bg-slate-900 p-8 text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 opacity-10 pointer-events-none"><Database className="w-64 h-64 -mt-10 -mr-10" /></div>
-            <div className="relative z-10 flex flex-col md:flex-row items-center gap-4 justify-between">
-              <div className="flex items-center gap-4">
-                <div className="bg-cyan-900/50 p-4 rounded-xl border border-cyan-800"><Database className="h-8 w-8 text-cyan-400" /></div>
-                <div>
-                  <h1 className="text-3xl font-black tracking-tight">Central Database Architecture</h1>
-                  <p className="mt-1 text-slate-400 font-medium">Live MongoDB Atlas Connection</p>
-                </div>
-              </div>
-              {token && (
-                 <div className="flex flex-wrap gap-2 bg-slate-800 rounded-lg p-1 border border-slate-700">
-                    <button onClick={() => setActiveTab('students')} className={`px-4 py-2 rounded-md font-bold text-sm transition-colors ${activeTab === 'students' ? 'bg-cyan-500 text-slate-900' : 'text-slate-400 hover:text-white'}`}>Students</button>
-                    <button onClick={() => setActiveTab('faculty')} className={`px-4 py-2 rounded-md font-bold text-sm transition-colors ${activeTab === 'faculty' ? 'bg-amber-500 text-slate-900' : 'text-slate-400 hover:text-white'}`}>Faculty</button>
-                    <button onClick={() => setActiveTab('admissions')} className={`px-4 py-2 rounded-md font-bold text-sm transition-colors ${activeTab === 'admissions' ? 'bg-emerald-500 text-slate-900' : 'text-slate-400 hover:text-white'}`}>Admissions</button>
-                 </div>
-              )}
-            </div>
-          </div>
-
-          <div className="p-8 bg-slate-50">
-            {!token ? (
-              <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 text-center py-16 max-w-lg mx-auto animate-in zoom-in-95">
-                 <Lock className="w-12 h-12 text-[#1e3a8a] mx-auto mb-4" />
-                 <h2 className="text-2xl font-black text-slate-900 mb-2">Secure Authentication Required</h2>
-                 <form onSubmit={handleLogin} className="space-y-4 mt-6">
-                   <input type="text" name="username" placeholder="Admin Username" value={loginData.username} onChange={(e) => setLoginData({...loginData, username: e.target.value})} required className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#1e3a8a] focus:ring-2 focus:ring-[#1e3a8a] text-center font-bold text-slate-700" />
-                   <input type="password" name="password" placeholder="Master Password" value={loginData.password} onChange={(e) => setLoginData({...loginData, password: e.target.value})} required className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#1e3a8a] focus:ring-2 focus:ring-[#1e3a8a] text-center font-bold text-slate-700" />
-                   <button type="submit" className="w-full px-8 py-4 mt-2 bg-[#1e3a8a] text-white font-black uppercase tracking-wider rounded-lg hover:bg-blue-900 shadow-lg transition-transform hover:-translate-y-1">Authenticate Session</button>
-                 </form>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                
-                {/* DYNAMIC FORM COLUMN */}
-                {activeTab === 'students' && (
-                   <div className={`bg-white p-8 rounded-xl shadow-sm border transition-colors ${editingId ? 'border-amber-400 shadow-amber-100' : 'border-slate-200'}`}>
-                      <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
-                        {editingId ? <Edit className="w-6 h-6 text-amber-500" /> : <UserPlus className="w-6 h-6 text-[#1e3a8a]" />}
-                        <h2 className="text-xl font-bold text-slate-900">{editingId ? "Update Student Record" : "Inject Student Record"}</h2>
-                        {editingId && <button type="button" onClick={() => {setEditingId(null); setFormData({name: "", rollNumber: "", department: "CSE", semester: ""})}} className="ml-auto text-xs font-bold text-slate-400 hover:text-slate-700 underline">Cancel Edit</button>}
-                      </div>
-                      <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Full Name</label>
-                            <input type="text" name="name" value={formData.name} onChange={(e)=>setFormData({...formData, name: e.target.value})} required className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-[#1e3a8a] focus:ring-2 focus:ring-[#1e3a8a] outline-none" />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Roll Number</label>
-                            <input type="text" name="rollNumber" value={formData.rollNumber} onChange={(e)=>setFormData({...formData, rollNumber: e.target.value})} required className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-[#1e3a8a] focus:ring-2 focus:ring-[#1e3a8a] outline-none" />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Department Code</label>
-                            <select name="department" value={formData.department} onChange={(e)=>setFormData({...formData, department: e.target.value})} className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-[#1e3a8a] focus:ring-2 focus:ring-[#1e3a8a] outline-none bg-white">
-                               <option value="CSE">CSE</option><option value="EE">EE</option><option value="ECE">ECE</option>
-                               <option value="ME">ME</option><option value="CE">CE</option><option value="AI & DS">AI & DS</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Semester</label>
-                            <input type="number" min="1" max="8" name="semester" value={formData.semester} onChange={(e)=>setFormData({...formData, semester: e.target.value})} required className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-[#1e3a8a] focus:ring-2 focus:ring-[#1e3a8a] outline-none" />
-                          </div>
-                        </div>
-                        <button type="submit" className={`mt-4 w-full rounded-lg py-3 text-center font-bold text-white transition-colors shadow-md ${editingId ? 'bg-amber-500 hover:bg-amber-600' : 'bg-[#1e3a8a] hover:bg-blue-900'}`}>
-                          {editingId ? "Save Modifications to Atlas" : "Commit to Atlas Database"}
-                        </button>
-                      </form>
-                   </div>
-                )}
-                {activeTab === 'faculty' && (
-                   <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200">
-                      <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
-                        <Users className="w-6 h-6 text-amber-500" />
-                        <h2 className="text-xl font-bold text-slate-900">Inject Faculty Record</h2>
-                      </div>
-                      <form onSubmit={handleFacultySubmit} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Full Name with Title</label>
-                            <input type="text" name="name" placeholder="e.g. Dr. A. Bhattacharya" value={facultyData.name} onChange={(e)=>setFacultyData({...facultyData, name: e.target.value})} required className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-amber-500 focus:ring-2 focus:ring-amber-500 outline-none" />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Department</label>
-                            <select name="department" value={facultyData.department} onChange={(e)=>setFacultyData({...facultyData, department: e.target.value})} className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-amber-500 focus:ring-2 focus:ring-amber-500 outline-none bg-white">
-                               <option value="CSE">CSE</option><option value="EE">EE</option><option value="ECE">ECE</option>
-                               <option value="ME">ME</option><option value="CE">CE</option><option value="AI & DS">AI & DS</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Designation</label>
-                            <select name="designation" value={facultyData.designation} onChange={(e)=>setFacultyData({...facultyData, designation: e.target.value})} className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-amber-500 focus:ring-2 focus:ring-amber-500 outline-none bg-white">
-                               <option value="HOD">Head of Department (HOD)</option>
-                               <option value="Professor">Professor</option>
-                               <option value="Assistant Professor">Assistant Professor</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Qualification</label>
-                            <input type="text" name="qualification" placeholder="e.g. Ph.D. in Network Security" value={facultyData.qualification} onChange={(e)=>setFacultyData({...facultyData, qualification: e.target.value})} required className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-amber-500 focus:ring-2 focus:ring-amber-500 outline-none" />
-                          </div>
-                        </div>
-                        <button type="submit" className="mt-4 w-full rounded-lg py-3 text-center font-bold text-slate-900 bg-amber-500 hover:bg-amber-400 transition-colors shadow-md">
-                          Deploy Faculty to Atlas
-                        </button>
-                      </form>
-                   </div>
-                )}
-                {activeTab === 'admissions' && (
-                  <div className="bg-emerald-500 p-8 rounded-xl shadow-sm border border-emerald-600 text-white flex flex-col justify-center items-center text-center h-full min-h-[300px]">
-                     <FileText className="w-16 h-16 mb-4 text-emerald-200" />
-                     <h2 className="text-3xl font-black mb-2">Admissions Queue</h2>
-                     <p className="font-medium text-emerald-100">Review pending application data from the public portal directly in the feed.</p>
-                  </div>
-                )}
-
-                {/* DYNAMIC LIST COLUMN */}
-                <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 flex flex-col">
-                   <div className="flex items-center justify-between mb-6 border-b border-slate-100 pb-4">
-                     <div className="flex items-center gap-3">
-                       <List className="w-6 h-6 text-[#1e3a8a]" />
-                       <h2 className="text-xl font-bold text-slate-900">Live {activeTab === 'students' ? 'Student' : activeTab === 'faculty' ? 'Faculty' : 'Applications'} Output</h2>
-                     </div>
-                     <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">Admin Privileges</span>
-                   </div>
-                   
-                   <div className="flex-1 overflow-y-auto max-h-[400px] pr-2">
-                     {activeTab === 'students' && (
-                        students.length === 0 ? (
-                          <div className="h-full flex flex-col items-center justify-center text-slate-400 py-10"><Database className="w-12 h-12 mb-2 opacity-20" /><p className="text-sm font-medium">Database is empty.</p></div>
-                        ) : (
-                          <ul className="space-y-3">
-                            {students.map((student) => (
-                              <li key={student._id} className="bg-slate-50 border border-slate-200 rounded-lg p-4 flex items-center justify-between transition-colors hover:border-[#1e3a8a]">
-                                <div>
-                                  <p className="font-bold text-slate-900">{student.name}</p>
-                                  <div className="flex gap-2 text-[10px] sm:text-xs font-bold mt-1">
-                                    <span className="bg-white px-2 py-0.5 rounded border border-slate-200 text-[#1e3a8a]">Roll: {student.rollNumber}</span>
-                                    <span className="bg-white px-2 py-0.5 rounded border border-slate-200 text-amber-600">{student.department} - Sem {student.semester}</span>
-                                  </div>
-                                </div>
-                                <div className="flex gap-2">
-                                  <button onClick={() => handleEditClick(student)} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-colors" title="Edit"><Edit className="w-4 h-4" /></button>
-                                  <button onClick={() => handleDelete(student._id)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></button>
-                                </div>
-                              </li>
-                            ))}
-                          </ul>
-                        )
-                     )}
-
-                     {activeTab === 'faculty' && (
-                        facultyList.length === 0 ? (
-                          <div className="h-full flex flex-col items-center justify-center text-slate-400 py-10"><Database className="w-12 h-12 mb-2 opacity-20" /><p className="text-sm font-medium">Faculty DB is empty.</p></div>
-                        ) : (
-                          <ul className="space-y-3">
-                            {facultyList.map((fac) => (
-                              <li key={fac._id} className="bg-slate-50 border border-slate-200 rounded-lg p-4 flex items-center justify-between transition-colors hover:border-amber-400">
-                                <div>
-                                  <p className="font-bold text-slate-900">{fac.name}</p>
-                                  <div className="flex gap-2 text-[10px] sm:text-xs font-bold mt-1">
-                                    <span className="bg-white px-2 py-0.5 rounded border border-slate-200 text-amber-600">{fac.department}</span>
-                                    <span className="bg-white px-2 py-0.5 rounded border border-slate-200 text-[#1e3a8a]">{fac.designation}</span>
-                                  </div>
-                                </div>
-                                <div className="flex gap-2">
-                                  <button onClick={() => handleFacultyDelete(fac._id)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></button>
-                                </div>
-                              </li>
-                            ))}
-                          </ul>
-                        )
-                     )}
-
-                     {activeTab === 'admissions' && (
-                        admissionsList.length === 0 ? (
-                          <div className="h-full flex flex-col items-center justify-center text-slate-400 py-10"><Database className="w-12 h-12 mb-2 opacity-20" /><p className="text-sm font-medium">No pending applications.</p></div>
-                        ) : (
-                          <ul className="space-y-3">
-                            {admissionsList.map((app) => (
-                              <li key={app._id} className="bg-slate-50 border border-slate-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors hover:border-emerald-500">
-                                <div>
-                                  <p className="font-bold text-slate-900">{app.name}</p>
-                                  <p className="text-xs text-slate-500 flex flex-wrap gap-x-3 gap-y-1 mt-1">
-                                    <span>{app.email}</span> <span>{app.phone}</span>
-                                  </p>
-                                  <div className="flex gap-2 text-[10px] sm:text-xs font-bold mt-2">
-                                    <span className="bg-emerald-100 px-2 py-0.5 rounded text-emerald-800">{app.department}</span>
-                                    <span className="bg-slate-200 px-2 py-0.5 rounded text-slate-800">Rank: {app.rank}</span>
-                                  </div>
-                                </div>
-                                <div className="flex gap-2 shrink-0">
-                                  <button onClick={() => handleAdmissionDelete(app._id)} className="p-2 bg-slate-200 text-slate-600 rounded-lg hover:bg-emerald-500 hover:text-white transition-colors text-xs font-bold" title="Process & Archive">Process / Archive</button>
-                                </div>
-                              </li>
-                            ))}
-                          </ul>
-                        )
-                     )}
-                   </div>
-                </div>
-
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
@@ -1698,20 +921,30 @@ export default function App() {
       <div className="min-h-screen bg-slate-50 font-sans">
         <Navigation />
         
-        <Routes>
-          <Route path="/" element={<HomeView />} />
-          <Route path="/academics" element={<AcademicsView />} />
-          <Route path="/scholarships" element={<ScholarshipsView />} />
-          <Route path="/admissions" element={<AdmissionsView />} />
-          <Route path="/departments" element={<DepartmentsSection />} />
-          <Route path="/departments/:slug" element={<DepartmentDetailView />} />
-          <Route path="/placements" element={<PlacementsView />} />
+        <Suspense fallback={<SkeletonLoader />}>
+          <Routes>
+            <Route path="/" element={<HomeView />} />
+            <Route path="/academics" element={<AcademicsView />} />
+            <Route path="/scholarships" element={<ScholarshipsView />} />
+            <Route path="/admissions" element={<AdmissionsView />} />
+            <Route path="/departments" element={<DepartmentsSection />} />
+            <Route path="/departments/:slug" element={<DepartmentDetailView />} />
+            <Route path="/campus-tour" element={<CampusTourView />} />
+            <Route path="/alumni" element={<AlumniView />} />
+            <Route path="/transport" element={<TransportView />} />
+            <Route path="/clubs-events" element={<ClubsEventsView />} />
+            <Route path="/placements" element={<PlacementsView />} />
+            <Route path="/pay-fees" element={<OnlineFeesView />} />
 
-          <Route path="/student-login" element={<StudentLoginView />} />
-          <Route path="/hod-login" element={<HODLoginView />} />
-          <Route path="/admin-login" element={<AdminLoginView />} />
-        </Routes>
+            <Route path="/student-login" element={<StudentLoginView />} />
+            <Route path="/hod-login" element={<HODLoginView />} />
+            <Route path="/admin-login" element={<AdminLoginView />} />
+          </Routes>
+        </Suspense>
         
+        {/* GLOBAL 24/7 AI CAMPUS ASSISTANT WIDGET */}
+        <AICampusAssistant />
+
         <Footer />
       </div>
     </Router>
